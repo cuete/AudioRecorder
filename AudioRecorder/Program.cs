@@ -16,46 +16,24 @@ namespace AudioRecorder
         {
             int unixTimestamp = (int)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
             MMDevice device = LoadWasapiDevice();
-            string outputFilename = $"C:\\workspace\\hackathon\\recording{unixTimestamp.ToString()}.wav";
+            string outputFilename = $"C:\\Path\\recording{unixTimestamp.ToString()}.wav";
             captureDevice = CreateWaveInDevice();
             var waveIn = new WaveInEvent();
             writer = new WaveFileWriter(outputFilename, captureDevice.WaveFormat);
             Console.WriteLine("Press any key to start recording...");
             Console.ReadKey();
+
             stopwatch.Start();
             captureDevice.StartRecording();
 
-            Console.WriteLine("Recording... Press any key to stop.");
+            Console.WriteLine("Recording, press any key to stop....");
             Console.ReadKey();
 
             StopRecording();
             Console.WriteLine($"File saved to {outputFilename}");
         }
 
-        public static IWaveIn CreateWaveInDevice()
-        {
-            IWaveIn newWaveIn;
-            newWaveIn = new WaveInEvent() { DeviceNumber = 0 };
-            var sampleRate = 16000;
-            var channels = 1;
-            newWaveIn.WaveFormat = new WaveFormat(sampleRate, channels);
-
-            //Alternative
-            //MMDevice device = LoadWasapiDevice();
-            //newWaveIn = new WasapiCapture(device);
-
-            newWaveIn.DataAvailable += OnDataAvailable;
-            newWaveIn.RecordingStopped += OnRecordingStopped;
-            return newWaveIn;
-        }
-
-        private static MMDevice LoadWasapiDevice()
-        {
-            var deviceEnum = new MMDeviceEnumerator();
-            var devices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active).ToList();
-            return devices.First();
-        }
-
+        //Event handlers
         static void OnDataAvailable(object sender, WaveInEventArgs e)
         {
             writer.Write(e.Buffer, 0, e.BytesRecorded);
@@ -73,6 +51,31 @@ namespace AudioRecorder
         static void OnRecordingStopped(object sender, StoppedEventArgs e)
         {
             Console.WriteLine($"\nRecording stopped.");
+        }
+
+        //Helper methods
+        public static IWaveIn CreateWaveInDevice()
+        {
+            IWaveIn newWaveIn;
+            newWaveIn = new WaveInEvent() { DeviceNumber = 0 }; //Utilizes the first capture device, change this value to use another
+            var sampleRate = 16000;
+            var channels = 1; //mono = 1, stereo = 2
+            newWaveIn.WaveFormat = new WaveFormat(sampleRate, channels);
+
+            //Alternative method, use if above doesn't work
+            //MMDevice device = LoadWasapiDevice();
+            //newWaveIn = new WasapiCapture(device);
+
+            newWaveIn.DataAvailable += OnDataAvailable;
+            newWaveIn.RecordingStopped += OnRecordingStopped;
+            return newWaveIn;
+        }
+
+        private static MMDevice LoadWasapiDevice()
+        {
+            var deviceEnum = new MMDeviceEnumerator();
+            var devices = deviceEnum.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active).ToList();
+            return devices.First();
         }
 
         static void StopRecording()
